@@ -53,7 +53,7 @@ private val SPLASH_ICONS = listOf(
     SplashIconOption(".IconGhost",      R.drawable.splash_icon_ghost),
     SplashIconOption(".IconDynamic",    R.drawable.ic_launcher_dynamic_foreground, isDynamic = true),
     SplashIconOption(".IconMaterialSky", R.drawable.tutube_icon_foreground_raw),
-    SplashIconOption(".IconMaterialMint", R.drawable.tutube_icon_foreground_raw)
+    SplashIconOption(".IconMaterialMint", R.drawable.tutube_icon_foreground_raw),
 )
 
 @Composable
@@ -174,7 +174,7 @@ fun FlowSplashScreen(
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
-                    modifier = Modifier.alpha(scale.value)
+                    modifier = Modifier.alpha(scale.value),
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -183,7 +183,7 @@ fun FlowSplashScreen(
                     text = "Free Your Premium YouTube.",
                     color = textColor.copy(alpha = 0.72f),
                     fontSize = 14.sp,
-                    modifier = Modifier.alpha(scale.value)
+                    modifier = Modifier.alpha(scale.value),
                 )
 
                 Spacer(modifier = Modifier.height(64.dp))
@@ -196,26 +196,26 @@ fun FlowSplashScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 48.dp)
-                    .alpha(scale.value)
+                    .alpha(scale.value),
             ) {
                 Text(
                     text = "Siam Mahmud Mukti",
                     color = textColor,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Created by:",
                     color = textColor.copy(alpha = 0.7f),
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "\u00A9 2026. All rights reserved.",
                     color = textColor.copy(alpha = 0.55f),
-                    fontSize = 11.sp
+                    fontSize = 11.sp,
                 )
             }
 
