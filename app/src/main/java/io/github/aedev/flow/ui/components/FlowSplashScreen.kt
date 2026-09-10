@@ -39,16 +39,21 @@ private data class SplashIconOption(
     val isDynamic: Boolean = false
 )
 
+// NOTE (TuTube): default entries repointed to the real TuTube logo asset
+// (tutube_icon_foreground_raw, the same bitmap used for the launcher icon).
+// Flow's alternate icon-theme variants (Amoled/Monochrome/Ghost/Dynamic)
+// still reference their own separate drawables, untouched - only the
+// default/primary logo shown here was rebranded.
 private val SPLASH_ICONS = listOf(
-    SplashIconOption(".IconFlowRed",    R.drawable.ic_flow_logo),
-    SplashIconOption(".IconFlowLight",  R.drawable.ic_flow_logo),
-    SplashIconOption(".IconFlowPlay",   R.drawable.ic_fg_flow_play),
+    SplashIconOption(".IconFlowRed",    R.drawable.tutube_icon_foreground_raw),
+    SplashIconOption(".IconFlowLight",  R.drawable.tutube_icon_foreground_raw),
+    SplashIconOption(".IconFlowPlay",   R.drawable.tutube_icon_foreground_raw),
     SplashIconOption(".IconAmoled",     R.drawable.splash_icon_amoled),
     SplashIconOption(".IconMonochrome", R.drawable.splash_icon_monochrome),
     SplashIconOption(".IconGhost",      R.drawable.splash_icon_ghost),
     SplashIconOption(".IconDynamic",    R.drawable.ic_launcher_dynamic_foreground, isDynamic = true),
-    SplashIconOption(".IconMaterialSky", R.drawable.ic_flow_logo),
-    SplashIconOption(".IconMaterialMint", R.drawable.ic_flow_logo)
+    SplashIconOption(".IconMaterialSky", R.drawable.tutube_icon_foreground_raw),
+    SplashIconOption(".IconMaterialMint", R.drawable.tutube_icon_foreground_raw)
 )
 
 @Composable
@@ -101,7 +106,13 @@ fun FlowSplashScreen(
         }
 
         // 3. Wait for app to be ready, then Fade Out
-        delay(1500) // Adjust this based on your actual data loading time
+        // NOTE (TuTube): stretched from 1500ms so total on-screen time lands
+        // around 4-4.5s (600ms scale-in + up to 1000ms line-grow overlap +
+        // this wait + 500ms fade-out), as requested. Worth knowing: this is
+        // now longer than the app's actual real loading time, i.e. a
+        // deliberate artificial delay rather than "shown exactly as long as
+        // needed" - a real UX tradeoff, not a bug.
+        delay(3200)
         alpha.animateTo(
             targetValue = 0f,
             animationSpec = tween(durationMillis = 500)
@@ -155,17 +166,57 @@ fun FlowSplashScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 2. The Text (Optional)
+                // 2. App name + tagline (TuTube branding, matching the
+                // provided splash mockup)
                 Text(
-                    text = "Flow",
+                    text = "TuTube",
                     color = textColor,
-                    fontSize = 26.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
                     modifier = Modifier.alpha(scale.value)
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Free Your Premium YouTube.",
+                    color = textColor.copy(alpha = 0.72f),
+                    fontSize = 14.sp,
+                    modifier = Modifier.alpha(scale.value)
+                )
+
+                Spacer(modifier = Modifier.height(64.dp))
+            }
+
+            // Creator credit block, bottom of screen - matches the provided
+            // mockup's "Siam Mahmud Mukti / Created by: / (c) year" layout.
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 48.dp)
+                    .alpha(scale.value)
+            ) {
+                Text(
+                    text = "Siam Mahmud Mukti",
+                    color = textColor,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Created by:",
+                    color = textColor.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "\u00A9 2026. All rights reserved.",
+                    color = textColor.copy(alpha = 0.55f),
+                    fontSize = 11.sp
+                )
             }
 
             // 3. The "Flow" Loading Line
