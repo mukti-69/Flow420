@@ -84,7 +84,7 @@ fun FlowSplashScreen(
     val scale = remember { Animatable(0f) }      // For the Logo Pop
     val lineProgress = remember { Animatable(0f) } // For the Red Line
     val alpha = remember { Animatable(1f) }      // For the Screen Fade Out
-    
+
     // --- The Choreography ---
     LaunchedEffect(key1 = true) {
         // 1. Logo Springs In (0ms -> 600ms)
@@ -117,7 +117,7 @@ fun FlowSplashScreen(
             targetValue = 0f,
             animationSpec = tween(durationMillis = 500)
         )
-        
+
         // 4. Tell MainActivity to remove the Splash
         onAnimationFinished()
     }
@@ -224,7 +224,7 @@ fun FlowSplashScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(top = 180.dp) 
+                    .padding(top = 180.dp)
                     .width(180.dp)
                     .height(4.dp)
                     .clip(CircleShape)
