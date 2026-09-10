@@ -26,9 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.aedev.flow.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import io.github.aedev.flow.R
 
 private const val SPLASH_ICON_NAMESPACE = "io.github.aedev.flow"
 
@@ -36,7 +36,7 @@ private data class SplashIconOption(
     val componentSuffix: String,
     val drawableRes: Int,
     /** When true, preview bg uses MaterialTheme dynamic colors (Material You variant). */
-    val isDynamic: Boolean = false
+    val isDynamic: Boolean = false,
 )
 
 // NOTE (TuTube): default entries repointed to the real TuTube logo asset
@@ -44,56 +44,59 @@ private data class SplashIconOption(
 // Flow's alternate icon-theme variants (Amoled/Monochrome/Ghost/Dynamic)
 // still reference their own separate drawables, untouched - only the
 // default/primary logo shown here was rebranded.
-private val SPLASH_ICONS = listOf(
-    SplashIconOption(".IconFlowRed",    R.drawable.tutube_icon_foreground_raw),
-    SplashIconOption(".IconFlowLight",  R.drawable.tutube_icon_foreground_raw),
-    SplashIconOption(".IconFlowPlay",   R.drawable.tutube_icon_foreground_raw),
-    SplashIconOption(".IconAmoled",     R.drawable.splash_icon_amoled),
-    SplashIconOption(".IconMonochrome", R.drawable.splash_icon_monochrome),
-    SplashIconOption(".IconGhost",      R.drawable.splash_icon_ghost),
-    SplashIconOption(".IconDynamic",    R.drawable.ic_launcher_dynamic_foreground, isDynamic = true),
-    SplashIconOption(".IconMaterialSky", R.drawable.tutube_icon_foreground_raw),
-    SplashIconOption(".IconMaterialMint", R.drawable.tutube_icon_foreground_raw),
-)
+private val SPLASH_ICONS =
+    listOf(
+        SplashIconOption(".IconFlowRed", R.drawable.tutube_icon_foreground_raw),
+        SplashIconOption(".IconFlowLight", R.drawable.tutube_icon_foreground_raw),
+        SplashIconOption(".IconFlowPlay", R.drawable.tutube_icon_foreground_raw),
+        SplashIconOption(".IconAmoled", R.drawable.splash_icon_amoled),
+        SplashIconOption(".IconMonochrome", R.drawable.splash_icon_monochrome),
+        SplashIconOption(".IconGhost", R.drawable.splash_icon_ghost),
+        SplashIconOption(".IconDynamic", R.drawable.ic_launcher_dynamic_foreground, isDynamic = true),
+        SplashIconOption(".IconMaterialSky", R.drawable.tutube_icon_foreground_raw),
+        SplashIconOption(".IconMaterialMint", R.drawable.tutube_icon_foreground_raw),
+    )
 
 @Composable
-fun FlowSplashScreen(
-    onAnimationFinished: () -> Unit
-) {
+fun FlowSplashScreen(onAnimationFinished: () -> Unit) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val textColor = colorScheme.onBackground
-    val loadingTrackColor = colorScheme.onBackground.copy(
-        alpha = if (colorScheme.background.luminance() < 0.5f) 0.22f else 0.12f
-    )
-    val loadingGradient = listOf(
-        colorScheme.primary,
-        colorScheme.tertiary
-    )
+    val loadingTrackColor =
+        colorScheme.onBackground.copy(
+            alpha = if (colorScheme.background.luminance() < 0.5f) 0.22f else 0.12f,
+        )
+    val loadingGradient =
+        listOf(
+            colorScheme.primary,
+            colorScheme.tertiary,
+        )
 
     // Detect the currently active app icon
-    val activeIcon = remember {
-        val pm = context.packageManager
-        val pkg = context.packageName
-        SPLASH_ICONS.firstOrNull { option ->
-            val cn = ComponentName(pkg, "$SPLASH_ICON_NAMESPACE${option.componentSuffix}")
-            pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        } ?: SPLASH_ICONS.first()
-    }
+    val activeIcon =
+        remember {
+            val pm = context.packageManager
+            val pkg = context.packageName
+            SPLASH_ICONS.firstOrNull { option ->
+                val cn = ComponentName(pkg, "$SPLASH_ICON_NAMESPACE${option.componentSuffix}")
+                pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } ?: SPLASH_ICONS.first()
+        }
     // --- Animation States ---
-    val scale = remember { Animatable(0f) }      // For the Logo Pop
+    val scale = remember { Animatable(0f) } // For the Logo Pop
     val lineProgress = remember { Animatable(0f) } // For the Red Line
-    val alpha = remember { Animatable(1f) }      // For the Screen Fade Out
+    val alpha = remember { Animatable(1f) } // For the Screen Fade Out
 
     // --- The Choreography ---
     LaunchedEffect(key1 = true) {
         // 1. Logo Springs In (0ms -> 600ms)
         scale.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow,
+                ),
         )
 
         // 2. The Line Grows (Wait 200ms, then grow)
@@ -101,7 +104,7 @@ fun FlowSplashScreen(
             delay(200)
             lineProgress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+                animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
             )
         }
 
@@ -115,7 +118,7 @@ fun FlowSplashScreen(
         delay(3200)
         alpha.animateTo(
             targetValue = 0f,
-            animationSpec = tween(durationMillis = 500)
+            animationSpec = tween(durationMillis = 500),
         )
 
         // 4. Tell MainActivity to remove the Splash
@@ -126,41 +129,45 @@ fun FlowSplashScreen(
     // Only render if we are visible
     if (alpha.value > 0f) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorScheme.background)
-                .alpha(alpha.value), // Controls the fade out
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background)
+                    .alpha(alpha.value),
+            // Controls the fade out
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 // 1. The Logo — rendered differently for static vs dynamic icons
                 if (activeIcon.isDynamic) {
                     // Material You: use the same padded foreground as Android themed icons.
                     Box(
-                        modifier = Modifier
-                            .scale(scale.value)
-                            .size(90.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(colorScheme.secondaryContainer),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .scale(scale.value)
+                                .size(90.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(colorScheme.secondaryContainer),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(id = activeIcon.drawableRes),
                             contentDescription = stringResource(R.string.ui_flow_logo),
                             colorFilter = ColorFilter.tint(colorScheme.onSecondaryContainer),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 } else {
                     Image(
                         painter = painterResource(id = activeIcon.drawableRes),
                         contentDescription = stringResource(R.string.ui_flow_logo),
-                        modifier = Modifier
-                            .scale(scale.value)
-                            .size(90.dp)
+                        modifier =
+                            Modifier
+                                .scale(scale.value)
+                                .size(90.dp),
                     )
                 }
 
@@ -193,10 +200,11 @@ fun FlowSplashScreen(
             // mockup's "Siam Mahmud Mukti / Created by: / (c) year" layout.
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 48.dp)
-                    .alpha(scale.value),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 48.dp)
+                        .alpha(scale.value),
             ) {
                 Text(
                     text = "Siam Mahmud Mukti",
@@ -222,24 +230,27 @@ fun FlowSplashScreen(
             // 3. The "Flow" Loading Line
             // Positioned slightly below center
             Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(top = 180.dp)
-                    .width(180.dp)
-                    .height(4.dp)
-                    .clip(CircleShape)
-                    .background(loadingTrackColor)
+                modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .padding(top = 180.dp)
+                        .width(180.dp)
+                        .height(4.dp)
+                        .clip(CircleShape)
+                        .background(loadingTrackColor),
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(lineProgress.value) // The growing animation
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = loadingGradient
-                            )
-                        )
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(lineProgress.value) // The growing animation
+                            .clip(CircleShape)
+                            .background(
+                                brush =
+                                    Brush.horizontalGradient(
+                                        colors = loadingGradient,
+                                    ),
+                            ),
                 )
             }
         }
