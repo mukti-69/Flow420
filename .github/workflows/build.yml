@@ -22,7 +22,7 @@ env:
   # Certificate of the official Flow release key. IzzyOnDroid and every
   # installed client pin this value; an APK signed with anything else cannot
   # be installed as an update. Changing it forces every user to reinstall.
-  EXPECTED_SIGNER_SHA256: 4322294ed4caa2d4294140095818080ffe8acc1fbe3cdc76107df45c5286be40
+  EXPECTED_SIGNER_SHA256: f0901d796043ff068f1a4d1b5c47031ae217b8db137bc91e10934e59f5784815
 
 jobs:
   build:
