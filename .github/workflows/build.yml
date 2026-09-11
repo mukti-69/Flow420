@@ -29,8 +29,6 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -52,23 +50,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Check Kotlin formatting
-        id: spotless
-        continue-on-error: true
         run: >
           ./gradlew spotlessCheck
-          --build-cache --stacktrace 2>&1 | tee /tmp/spotless.log
-
-      - name: Show formatting violations if failed
-        if: steps.spotless.outcome == 'failure'
-        run: |
-          tail -c 8000 /tmp/spotless.log > /tmp/spotless_error.txt
-          git config user.email "ci@zahin-dev.local"
-          git config user.name "CI Diagnostics"
-          cp /tmp/spotless_error.txt spotless_error.txt
-          git add spotless_error.txt
-          git commit -m "CI: dump spotless violation for diagnosis [skip ci]"
-          git push origin HEAD:main
-          exit 1
+          --build-cache --stacktrace
 
       - name: Decode Keystore
         id: keystore
