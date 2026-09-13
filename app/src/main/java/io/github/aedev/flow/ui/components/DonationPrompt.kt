@@ -23,15 +23,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,74 +33,24 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.aedev.flow.R
-import io.github.aedev.flow.data.local.PlayerPreferences
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
-private const val DONATION_PROMPT_GRACE_MS = 3L * 24L * 60L * 60L * 1000L
-private const val DONATION_PROMPT_INTERVAL_MS = 75L * 24L * 60L * 60L * 1000L
-private const val DONATION_PROMPT_SHOW_DELAY_MS = 1_500L
+// NOTE (TuTube): the timing constants and full popup logic that used to
+// live here were removed (see DonationPromptHost below) - they only
+// existed to schedule the donation prompt that's now fully disabled.
 
 @Composable
 fun DonationPromptHost(
     enabled: Boolean,
     onNavigateToDonations: () -> Unit
 ) {
-    val context = LocalContext.current
-    val preferences = remember { PlayerPreferences(context) }
-    val scope = rememberCoroutineScope()
-
-    var visible by remember { mutableStateOf(false) }
-    var evaluated by remember { mutableStateOf(false) }
-
-    LaunchedEffect(enabled) {
-        if (!enabled || evaluated) return@LaunchedEffect
-        delay(DONATION_PROMPT_SHOW_DELAY_MS)
-        evaluated = true
-
-        if (preferences.donationPromptDisabled.first()) return@LaunchedEffect
-
-        val now = System.currentTimeMillis()
-        val firstLaunch = preferences.donationFirstLaunchTime.first()
-        if (firstLaunch == 0L) {
-            preferences.setDonationFirstLaunchTime(now)
-            return@LaunchedEffect
-        }
-        if (now - firstLaunch < DONATION_PROMPT_GRACE_MS) return@LaunchedEffect
-
-        val lastShown = preferences.donationPromptLastShownTime.first()
-        if (lastShown != 0L && now - lastShown < DONATION_PROMPT_INTERVAL_MS) return@LaunchedEffect
-
-        preferences.setDonationPromptShown(now)
-        visible = true
-    }
-
-    if (visible) {
-        DonationPromptDialog(
-            onSupport = {
-                visible = false
-                scope.launch {
-                    preferences.setDonationPromptShown(System.currentTimeMillis())
-                    onNavigateToDonations()
-                }
-            },
-            onLater = {
-                visible = false
-                scope.launch {
-                    preferences.setDonationPromptShown(System.currentTimeMillis())
-                }
-            },
-            onNever = {
-                visible = false
-                scope.launch {
-                    preferences.setDonationPromptShown(System.currentTimeMillis())
-                    preferences.setDonationPromptDisabled(true)
-                }
-            }
-        )
-    }
+    // Disabled entirely (TuTube): the donation destination this prompts for
+    // still links to the original developer's real Patreon and crypto
+    // wallet addresses (not ours) - see DonationsScreen.kt. Rather than
+    // ever surface that unprompted, this popup is fully suppressed until
+    // there's a real, correct destination to send it to. Parameters kept
+    // as-is so the call site doesn't need changes.
 }
+
 
 @Composable
 private fun DonationPromptDialog(

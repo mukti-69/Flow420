@@ -28,8 +28,9 @@ object UpdateManager {
     private val client: OkHttpClient
         get() = AppProxyManager.applyTo(OkHttpClient.Builder()).build()
     
-    // 🔥 CHANGE THIS TO YOUR REPO: "owner/repo"
-    private const val GITHUB_REPO = "A-EDev/Flow" 
+    // Repointed from upstream (A-EDev/Flow) to our own fork, so update
+    // checks find our own releases instead of upstream's.
+    private const val GITHUB_REPO = "mukti-69/Flow420"
     private const val API_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
 
     suspend fun checkForUpdate(currentVersionName: String): UpdateInfo? = withContext(Dispatchers.IO) {

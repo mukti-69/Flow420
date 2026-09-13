@@ -136,14 +136,10 @@ fun HomeScreen(
         topBar = {
             FlowTopBar(
                 title = {
-                    Text(
-                        stringResource(R.string.app_name_uppercase),
-                        style =
-                            MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.sp,
-                            ),
-                    )
+                    // Intentionally empty (TuTube): the wordmark is now
+                    // baked into the combined logo image rendered by
+                    // FlowHeaderLogoIcon below - showing this text too
+                    // would duplicate the app name next to itself.
                 },
                 leading =
                     if (showAppLogoIcon) {
@@ -155,7 +151,6 @@ fun HomeScreen(
                                         DeepFlowManager.toggle(context)
                                     }
                                 },
-                                modifier = Modifier.size(32.dp),
                             )
                         }
                     } else {

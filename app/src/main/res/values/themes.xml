@@ -13,7 +13,7 @@
     <!-- OS-level splash screen theme (Android 12+).
          Background matches the Compose splash screen so there is no white flash. -->
     <style name="Theme.Flow.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#0F0F0F</item>
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.Flow</item>
     </style>
