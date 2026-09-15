@@ -434,7 +434,7 @@ class MainActivity : ComponentActivity() {
 
                         // 2. THE SPLASH SCREEN (Z-Index Top)
                         if (showSplash) {
-                            io.github.aedev.flow.ui.components.FlowSplashScreen(
+                            io.github.aedev.flow.ui.components.TuTubeVideoSplashScreen(
                                 onAnimationFinished = {
                                     showSplash = false
                                 },
