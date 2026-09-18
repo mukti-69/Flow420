@@ -18,12 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Tv
-import androidx.compose.material.icons.outlined.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -41,12 +39,8 @@ import io.github.aedev.flow.ui.tv.components.TvNavRow
 import io.github.aedev.flow.ui.tv.components.TvSectionHeader
 import io.github.aedev.flow.ui.tv.focus.ProvideTvColumnPivot
 
-private const val FLOW_WEBSITE_URL = "https://flow.aedev.me"
-private const val FLOW_RELEASES_URL = "https://github.com/A-EDev/Flow/releases"
-private const val FLOW_GITHUB_URL = "https://github.com/A-EDev/Flow"
-private const val FLOW_REDDIT_URL = "https://www.reddit.com/r/Flow_Official/"
-private const val FLOW_CREATOR_URL = "https://github.com/A-EDev"
-private const val FLOW_DONATION_URL = "https://patreon.com/A_EDev"
+private const val FORK_REPOSITORY_URL = "https://github.com/mukti-69/Flow420"
+private const val FORK_CREATOR_URL = "https://github.com/mukti-69"
 private const val FLOW_LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 private const val NEWPIPE_EXTRACTOR_URL = "https://github.com/TeamNewPipe/NewPipeExtractor"
 
@@ -73,18 +67,9 @@ fun TvAboutSettingsPane(modifier: Modifier = Modifier) {
                     label = stringResource(R.string.about_changelog),
                     supportingText = stringResource(R.string.whats_new_in_flow),
                     leadingIcon = Icons.Outlined.History,
-                    onClick = { context.openUrl(FLOW_RELEASES_URL) },
+                    onClick = { context.openUrl("$FORK_REPOSITORY_URL/releases") },
                 )
             }
-            item(key = "donate") {
-                TvNavRow(
-                    label = stringResource(R.string.donate_item_title),
-                    supportingText = stringResource(R.string.support_dev_subtitle),
-                    leadingIcon = Icons.Outlined.VolunteerActivism,
-                    onClick = { context.openUrl(FLOW_DONATION_URL) },
-                )
-            }
-
             item(key = "contact-header") {
                 TvAboutSectionHeader(stringResource(R.string.section_contact))
             }
@@ -93,7 +78,7 @@ fun TvAboutSettingsPane(modifier: Modifier = Modifier) {
                     label = stringResource(R.string.about_website),
                     value = stringResource(R.string.about_website_address),
                     leadingIcon = Icons.Outlined.Public,
-                    onClick = { context.openUrl(FLOW_WEBSITE_URL) },
+                    onClick = { context.openUrl(FORK_REPOSITORY_URL) },
                 )
             }
             item(key = "github") {
@@ -101,15 +86,7 @@ fun TvAboutSettingsPane(modifier: Modifier = Modifier) {
                     label = stringResource(R.string.github_label),
                     supportingText = stringResource(R.string.github_subtitle),
                     leadingIcon = Icons.Outlined.Code,
-                    onClick = { context.openUrl(FLOW_GITHUB_URL) },
-                )
-            }
-            item(key = "reddit") {
-                TvNavRow(
-                    label = stringResource(R.string.about_reddit),
-                    value = stringResource(R.string.about_reddit_subtitle),
-                    leadingIcon = Icons.Outlined.Forum,
-                    onClick = { context.openUrl(FLOW_REDDIT_URL) },
+                    onClick = { context.openUrl(FORK_REPOSITORY_URL) },
                 )
             }
             item(key = "creator") {
@@ -117,7 +94,7 @@ fun TvAboutSettingsPane(modifier: Modifier = Modifier) {
                     label = stringResource(R.string.about_creator),
                     value = stringResource(R.string.about_creator_name),
                     leadingIcon = Icons.Outlined.Person,
-                    onClick = { context.openUrl(FLOW_CREATOR_URL) },
+                    onClick = { context.openUrl(FORK_CREATOR_URL) },
                 )
             }
 
@@ -181,11 +158,12 @@ private fun TvAboutIdentity() {
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Text(
-                    text = stringResource(
-                        R.string.v_version_template,
-                        BuildConfig.VERSION_NAME,
-                        BuildConfig.VERSION_CODE.toString(),
-                    ),
+                    text =
+                        stringResource(
+                            R.string.v_version_template,
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE.toString(),
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -203,13 +181,15 @@ private fun TvAboutSectionHeader(title: String) {
 }
 
 private fun Context.openUrl(url: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val intent =
+        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { startActivity(intent) }
 }
 
 private fun Context.openDeviceInfo() {
-    val intent = Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val intent =
+        Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { startActivity(intent) }
 }

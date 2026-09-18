@@ -1,6 +1,30 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
+// Releases are cut from tags, so the version must come from the tag rather than a hardcoded
+// literal: Android rejects an install whose versionCode is not greater than the installed one,
+// and the in-app updater compares versionName. A stale literal here means every release after
+// the first is silently refused as a downgrade.
+fun String.toVersionCode(): Int {
+    val parts = removePrefix("v").split("-").first().split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    return major * 10_000 + minor * 100 + patch
+}
+
+val releaseVersionName: String =
+    (project.findProperty("versionName") as? String)
+        ?: System.getenv("RELEASE_VERSION_NAME")
+        ?: "2.2.2"
+
+val releaseVersionCode: Int =
+    (
+        (project.findProperty("versionCode") as? String)
+            ?: System.getenv("RELEASE_VERSION_CODE")
+    )?.toIntOrNull()
+        ?: releaseVersionName.toVersionCode()
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -19,8 +43,8 @@ android {
         applicationId = "io.github.aedev.flow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "2.2.1"
+        versionCode = releaseVersionCode
+        versionName = releaseVersionName
 
         testInstrumentationRunner = "io.github.aedev.flow.HiltTestRunner"
         vectorDrawables {
@@ -291,7 +315,6 @@ dependencies {
     implementation(libs.androidx.paging.compose)
 
     implementation(libs.androidx.work.runtime.ktx)
-    "githubImplementation"(libs.apkupdater)
 
     implementation(libs.brotli)
     implementation(libs.re2j)

@@ -30,11 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import io.github.aedev.flow.R
+import io.github.aedev.flow.utils.UpdateDownloadState
+import io.github.aedev.flow.utils.UpdateFailure
 import io.github.aedev.flow.utils.UpdateInfo
 
 @Composable
 fun UpdateDialog(
     updateInfo: UpdateInfo,
+    downloadState: UpdateDownloadState,
     onDismiss: () -> Unit,
     onUpdate: () -> Unit,
 ) {
@@ -145,6 +148,8 @@ fun UpdateDialog(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    UpdateProgressIndicator(downloadState)
+
                     Column(
                         modifier =
                             Modifier
@@ -172,12 +177,15 @@ fun UpdateDialog(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
+                    val busy = downloadState is UpdateDownloadState.Downloading
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Button(
                             onClick = onDismiss,
+                            enabled = !busy,
                             modifier =
                                 Modifier
                                     .weight(1f)
@@ -198,6 +206,7 @@ fun UpdateDialog(
 
                         Button(
                             onClick = onUpdate,
+                            enabled = !busy,
                             modifier =
                                 Modifier
                                     .weight(1f)
@@ -229,6 +238,60 @@ fun UpdateDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun UpdateProgressIndicator(state: UpdateDownloadState) {
+    val label =
+        when (state) {
+            is UpdateDownloadState.Downloading -> {
+                stringResource(R.string.update_downloading_percent, state.percent)
+            }
+
+            UpdateDownloadState.Verifying -> {
+                stringResource(R.string.update_verifying_signature)
+            }
+
+            UpdateDownloadState.Installing -> {
+                stringResource(R.string.update_opening_installer)
+            }
+
+            is UpdateDownloadState.Failed -> {
+                when (state.reason) {
+                    UpdateFailure.DOWNLOAD -> stringResource(R.string.update_failed_download)
+                    UpdateFailure.SIGNATURE_MISMATCH -> stringResource(R.string.update_failed_signature)
+                    UpdateFailure.INSTALLER_UNAVAILABLE -> stringResource(R.string.update_failed_installer)
+                }
+            }
+
+            UpdateDownloadState.Idle -> {
+                null
+            }
+        } ?: return
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            color =
+                if (state is UpdateDownloadState.Failed) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    Color.White.copy(alpha = 0.8f)
+                },
+        )
+        if (state is UpdateDownloadState.Downloading) {
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { state.percent / 100f },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

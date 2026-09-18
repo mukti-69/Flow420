@@ -1437,28 +1437,14 @@
         <item quantity="one">%1$d thread</item>
         <item quantity="other">%1$d threads</item>
     </plurals>
-    <!-- Donations Screen -->
     <string name="support_donations_title">Support &amp; Donations</string>
     <string name="support_flow_dev_title">Support TuTube Development</string>
-    <string name="support_flow_dev_desc">If you find TuTube useful and would like to support its development, you can support it on Patreon or donate via the crypto addresses below. Your support helps keep the project alive!</string>
-    <string name="support_flow_patreon">Support TuTube on Patreon</string>
-    <string name="thank_you_support_message">Thank you for your support! ❤️</string>
-    <string name="address_copied_toast">Address copied to clipboard</string>
-    <string name="donation_address_clip_label">Donation Address</string>
-    <!-- One-time support prompt -->
-    <string name="donation_prompt_title">Enjoying TuTube?</string>
-    <string name="donation_prompt_message">TuTube is free, open-source, and built without ads or trackers. If it has earned a place on your device, please consider supporting its development — it genuinely helps keep the project alive.</string>
-    <string name="donation_prompt_methods">Patreon · Bitcoin · Ethereum · Solana · USDT · Monero</string>
-    <string name="donation_prompt_support">Support development</string>
-    <string name="donation_prompt_later">Maybe later</string>
-    <string name="donation_prompt_never">Don\'t show again</string>
+    <string name="donations_no_links_message">This build has no donation links configured. Upstream Flow\'s Patreon and crypto addresses were removed because they belong to the original developer, not to this fork.</string>
     <!-- About Screen -->
     <string name="about_creator">Creator</string>
     <string name="about_creator_name">Siam Mahmud Mukti</string>
     <string name="about_website">Website</string>
-    <string name="about_website_address">flow.aedev.me</string>
-    <string name="about_reddit">Reddit</string>
-    <string name="about_reddit_subtitle">r/Flow_Official</string>
+    <string name="about_website_address">github.com/mukti-69/Flow420</string>
     <string name="github_subtitle">Source code &amp; Issues</string>
     <string name="newpipe_extractor_title">NewPipe Extractor</string>
     <string name="newpipe_extractor_subtitle">Core extraction library</string>
@@ -1958,6 +1944,12 @@
     <string name="check_for_updates_subtitle">Tap to check for the latest version</string>
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="flow_is_up_to_date">TuTube is up to date!</string>
+    <string name="update_downloading_percent">Downloading update… %1$d%%</string>
+    <string name="update_verifying_signature">Verifying the download…</string>
+    <string name="update_opening_installer">Opening the installer…</string>
+    <string name="update_failed_download">Couldn\'t download the update. Check your connection and try again.</string>
+    <string name="update_failed_signature">This update was signed with a different key than your installed app, so Android will not accept it. Install it manually from the release page.</string>
+    <string name="update_failed_installer">Android blocked the installer. Allow this app to install unknown apps in system settings, then try again.</string>
     <string name="update_check_failed">Couldn\'t check for updates. Check your connection.</string>
     <!-- Export / Import Flow Engine data (Settings + ImportDataScreen) -->
     <string name="export_engine_data">Export Engine Profile</string>
@@ -2768,7 +2760,6 @@
     <string name="settings_search_no_results">No settings found for "%1$s"</string>
     <string name="settings_lyrics_provider_order_description">Providers are tried in order. The first one that returns lyrics wins.</string>
     <string name="import_running_background">You can navigate away — the import continues in the background.</string>
-    <string name="donations_cryptocurrency">CRYPTOCURRENCY</string>
     <string name="import_no_history_entries">No watch-history entries found in file</string>
     <string name="import_no_videos">No videos found in playlist file</string>
     <string name="import_no_content">No importable content found in this backup</string>
