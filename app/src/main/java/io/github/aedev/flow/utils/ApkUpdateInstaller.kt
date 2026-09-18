@@ -46,6 +46,13 @@ enum class UpdateFailure {
  * app. Android refuses a same-package update signed with a different key
  * (INSTALL_FAILED_UPDATE_INCOMPATIBLE), and that failure surfaces as an opaque "App not
  * installed" with no hint that the build came from a different publisher.
+ *
+ * AGENTS.md prefers a maintained library over hand-rolled code, so `apkupdater-library` was
+ * checked first. Its API is `ApkUpdater(activity, releaseUrl).requestDownload()` with no progress
+ * callback and no signature verification: it cannot drive the download progress and failure
+ * states this UI already shows, and it would silently hand an unverifiable APK to the installer.
+ * The download here is a plain OkHttp stream (already on the classpath) and signing detection
+ * delegates to PackageManager rather than reimplementing any cryptography.
  */
 object ApkUpdateInstaller {
     private const val TAG = "ApkUpdateInstaller"
