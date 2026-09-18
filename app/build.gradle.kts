@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
-// Releases are cut from tags, so the version must come from the tag rather than a hardcoded
-// literal: Android rejects an install whose versionCode is not greater than the installed one,
-// and the in-app updater compares versionName. A stale literal here means every release after
-// the first is silently refused as a downgrade.
+// Releases are cut from tags, so the version comes from the tag rather than a hardcoded literal:
+// Android rejects an install whose versionCode is not greater than the installed one, and the
+// in-app updater compares versionName against the release tag. The literal below is only the
+// fallback for local and PR builds; per AGENTS.md the project owner bumps it manually.
 fun String.toVersionCode(): Int {
     val parts = removePrefix("v").split("-").first().split(".")
     val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
@@ -16,7 +16,7 @@ fun String.toVersionCode(): Int {
 val releaseVersionName: String =
     (project.findProperty("versionName") as? String)
         ?: System.getenv("RELEASE_VERSION_NAME")
-        ?: "2.2.2"
+        ?: "2.2.1"
 
 val releaseVersionCode: Int =
     (
