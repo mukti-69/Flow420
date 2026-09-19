@@ -43,6 +43,11 @@ object NotificationHelper {
     const val CHANNEL_GENERAL = "general_channel"
     const val CHANNEL_REMINDERS = "reminders_channel"
     const val CHANNEL_UPDATES = "updates_channel"
+
+    // Separate channel for updates the owner has declared mandatory. Android freezes a channel's
+    // importance after creation, so raising CHANNEL_UPDATES from LOW in place would silently do
+    // nothing on existing installs; a new id is the only way to actually get a heads-up alert.
+    const val CHANNEL_UPDATES_MANDATORY = "updates_mandatory_channel"
     const val CHANNEL_IMPORTS = "imports_channel"
 
     // Notification IDs
@@ -173,6 +178,18 @@ object NotificationHelper {
                     setShowBadge(true)
                 }
 
+            // Mandatory updates get a heads-up alert, so the channel is HIGH where the optional one
+            // is LOW. It is only used when the owner has raised the supported-version floor.
+            val updatesMandatoryChannel =
+                NotificationChannel(
+                    CHANNEL_UPDATES_MANDATORY,
+                    context.getString(R.string.notification_channel_updates_mandatory),
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    description = context.getString(R.string.notification_channel_updates_mandatory_description)
+                    setShowBadge(true)
+                }
+
             val importsChannel =
                 NotificationChannel(
                     CHANNEL_IMPORTS,
@@ -194,6 +211,7 @@ object NotificationHelper {
                     generalChannel,
                     remindersChannel,
                     updatesChannel,
+                    updatesMandatoryChannel,
                     importsChannel,
                 ),
             )
@@ -687,9 +705,14 @@ object NotificationHelper {
         version: String,
         changelog: String,
         downloadUrl: String,
+        mandatory: Boolean = false,
     ) {
         if (!hasNotificationPermission(context)) return
-        if (!runBlocking { PlayerPreferences(context).notifUpdatesEnabled.first() }) return
+
+        // A mandatory update has to bypass the optional per-type toggle: the owner has declared the
+        // installed build past its support window, so a preference must not suppress the alert. The
+        // master notifications switch and the system permission still apply and are respected above.
+        if (!mandatory && !runBlocking { PlayerPreferences(context).notifUpdatesEnabled.first() }) return
 
         val intent =
             Intent(context, MainActivity::class.java).apply {
@@ -707,16 +730,22 @@ object NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
+        val channel = if (mandatory) CHANNEL_UPDATES_MANDATORY else CHANNEL_UPDATES
+
         val notification =
             NotificationCompat
-                .Builder(context, CHANNEL_UPDATES)
+                .Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_notification_logo)
                 .setContentTitle(context.getString(R.string.notification_update_available, version))
-                .setContentText(context.getString(R.string.notification_tap_to_update))
-                .setContentIntent(pendingIntent)
+                .setContentText(
+                    context.getString(
+                        if (mandatory) R.string.notification_update_required else R.string.notification_tap_to_update,
+                    ),
+                ).setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setPriority(
+                    if (mandatory) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW,
+                ).setCategory(NotificationCompat.CATEGORY_STATUS)
                 .build()
 
         NotificationManagerCompat.from(context).notify(9999, notification)
