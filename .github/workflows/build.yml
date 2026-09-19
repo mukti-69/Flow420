@@ -19,9 +19,9 @@ permissions:
   contents: read
 
 env:
-  # Certificate of the official Flow release key. IzzyOnDroid and every
-  # installed client pin this value; an APK signed with anything else cannot
-  # be installed as an update. Changing it forces every user to reinstall.
+  # Certificate of this fork's release key. Every installed client pins it,
+  # so an APK signed with anything else cannot be installed as an update;
+  # changing it forces every user to reinstall.
   EXPECTED_SIGNER_SHA256: f0901d796043ff068f1a4d1b5c47031ae217b8db137bc91e10934e59f5784815
 
 jobs:
@@ -29,8 +29,6 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -51,24 +49,36 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # Tag builds must carry the tag's version: Android refuses to install an APK whose
+      # versionCode does not exceed the installed one, and the in-app updater compares
+      # versionName against the release tag. Without this the APK keeps the version baked into
+      # build.gradle.kts and every update after the first is rejected as a downgrade.
+      - name: Derive version from tag
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF#refs/tags/v}" != "$GITHUB_REF" ]; then
+            tag="${GITHUB_REF#refs/tags/}"
+            version="${tag#v}"
+            version="${version%%-*}"
+            # Trailing segments (e.g. v1.2.3.4) are ignored so the arithmetic below stays valid.
+            IFS='.' read -r major minor patch _rest <<< "$version"
+            for part in "$major" "$minor" "$patch"; do
+              case "$part" in
+                ''|*[!0-9]*) echo "::error::Tag $tag does not start with a numeric major.minor.patch version."; exit 1 ;;
+              esac
+            done
+            code=$(( major * 10000 + minor * 100 + patch ))
+            echo "RELEASE_VERSION_NAME=$version" >> "$GITHUB_ENV"
+            echo "RELEASE_VERSION_CODE=$code" >> "$GITHUB_ENV"
+            echo "Tag $tag -> versionName=$version versionCode=$code"
+          else
+            echo "Not a tag build; using the version committed in app/build.gradle.kts."
+          fi
+
       - name: Check Kotlin formatting
-        id: spotless
-        continue-on-error: true
         run: >
           ./gradlew spotlessCheck
-          --build-cache --stacktrace 2>&1 | tee /tmp/spotless.log
-
-      - name: Show formatting violations if failed
-        if: steps.spotless.outcome == 'failure'
-        run: |
-          tail -c 8000 /tmp/spotless.log > /tmp/spotless_error.txt
-          git config user.email "ci@zahin-dev.local"
-          git config user.name "CI Diagnostics"
-          cp /tmp/spotless_error.txt spotless_error.txt
-          git add spotless_error.txt
-          git commit -m "CI: dump spotless violation for diagnosis [skip ci]"
-          git push origin HEAD:main
-          exit 1
+          --build-cache --stacktrace
 
       - name: Decode Keystore
         id: keystore

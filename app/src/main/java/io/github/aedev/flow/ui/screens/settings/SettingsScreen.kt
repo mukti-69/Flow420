@@ -1,7 +1,5 @@
 package io.github.aedev.flow.ui.screens.settings
 
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.gson.JsonParser
 import io.github.aedev.flow.BuildConfig
 import io.github.aedev.flow.R
 import io.github.aedev.flow.data.local.AppUiModePreferences
@@ -55,19 +52,20 @@ import io.github.aedev.flow.data.local.PlayerPreferences
 import io.github.aedev.flow.data.recommendation.FlowNeuroEngine
 import io.github.aedev.flow.data.recommendation.UserBrain
 import io.github.aedev.flow.discord.DiscordPresenceRuntime
-import io.github.aedev.flow.network.AppProxyManager
 import io.github.aedev.flow.platform.AppUiMode
 import io.github.aedev.flow.player.DeepFlowManager
+import io.github.aedev.flow.ui.components.UpdateDialog
 import io.github.aedev.flow.ui.components.layout.topbar.FlowSearchTopBar
 import io.github.aedev.flow.ui.components.layout.topbar.FlowTopBar
 import io.github.aedev.flow.ui.theme.ThemeMode
 import io.github.aedev.flow.ui.theme.extendedColors
+import io.github.aedev.flow.utils.ApkUpdateInstaller
 import io.github.aedev.flow.utils.AppLanguageManager
-import kotlinx.coroutines.Dispatchers
+import io.github.aedev.flow.utils.UpdateCheckResult
+import io.github.aedev.flow.utils.UpdateDownloadState
+import io.github.aedev.flow.utils.UpdateInfo
+import io.github.aedev.flow.utils.UpdateManager
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -126,8 +124,9 @@ fun SettingsScreen(
     var showResetBrainDialog by remember { mutableStateOf(false) }
     // Update checker state (github flavor only)
     var isCheckingUpdate by remember { mutableStateOf(false) }
-    // null = no dialog; non-null = tag string of the available update
-    var updateAvailableTag by remember { mutableStateOf<String?>(null) }
+    // Non-null once a newer release is known; drives the dialog.
+    var pendingUpdate by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateDownloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
 
     // Player preferences states
     val currentRegion by playerPreferences.trendingRegion.collectAsState(initial = "US")
@@ -195,68 +194,27 @@ fun SettingsScreen(
     val onCheckForUpdatesClick: () -> Unit = {
         if (BuildConfig.UPDATER_ENABLED && !isCheckingUpdate) {
             isCheckingUpdate = true
-            coroutineScope.launch(Dispatchers.IO) {
-                try {
-                    val client = AppProxyManager.applyTo(OkHttpClient.Builder()).build()
-                    val request =
-                        Request
-                            .Builder()
-                            .url("https://api.github.com/repos/A-EDev/Flow/releases/latest")
-                            .header("Accept", "application/vnd.github.v3+json")
-                            .build()
-                    val response = client.newCall(request).execute()
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdate = false
-                        if (response.isSuccessful) {
-                            val body = response.body?.string()
-                            if (body != null) {
-                                val json = JsonParser.parseString(body).asJsonObject
-                                val latestTag = json.get("tag_name").asString
-                                val cleanLatest = latestTag.removePrefix("v")
-                                val cleanCurrent = BuildConfig.VERSION_NAME.removePrefix("v")
-                                val latestParts = cleanLatest.split(".").mapNotNull { it.toIntOrNull() }
-                                val currentParts = cleanCurrent.split(".").mapNotNull { it.toIntOrNull() }
-                                var isNewer = false
-                                val size = maxOf(latestParts.size, currentParts.size)
-                                for (i in 0 until size) {
-                                    val l = latestParts.getOrNull(i) ?: 0
-                                    val c = currentParts.getOrNull(i) ?: 0
-                                    if (l > c) {
-                                        isNewer = true
-                                        break
-                                    }
-                                    if (l < c) break
-                                }
-                                if (isNewer) {
-                                    updateAvailableTag = latestTag
-                                } else {
-                                    android.widget.Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(R.string.flow_is_up_to_date),
-                                            android.widget.Toast.LENGTH_SHORT,
-                                        ).show()
-                                }
-                            }
-                        } else {
-                            android.widget.Toast
-                                .makeText(
-                                    context,
-                                    context.getString(R.string.update_check_failed),
-                                    android.widget.Toast.LENGTH_SHORT,
-                                ).show()
+            coroutineScope.launch {
+                val toastMessage =
+                    when (val result = UpdateManager.checkForUpdateResult(BuildConfig.VERSION_NAME)) {
+                        is UpdateCheckResult.Available -> {
+                            pendingUpdate = result.info
+                            null
+                        }
+
+                        UpdateCheckResult.UpToDate -> {
+                            R.string.flow_is_up_to_date
+                        }
+
+                        is UpdateCheckResult.Failed -> {
+                            R.string.update_check_failed
                         }
                     }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        isCheckingUpdate = false
-                        android.widget.Toast
-                            .makeText(
-                                context,
-                                context.getString(R.string.update_check_failed),
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                    }
+                isCheckingUpdate = false
+                if (toastMessage != null) {
+                    android.widget.Toast
+                        .makeText(context, context.getString(toastMessage), android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
         }
@@ -1360,32 +1318,25 @@ fun SettingsScreen(
         )
     }
 
-    // Update Available Dialog (github flavor only)
+    // Update Available dialog (github flavor only) - installs in place, no browser round-trip.
     if (BuildConfig.UPDATER_ENABLED) {
-        val tag = updateAvailableTag
-        if (tag != null) {
-            AlertDialog(
-                onDismissRequest = { updateAvailableTag = null },
-                icon = { Icon(Icons.Outlined.Update, null, tint = MaterialTheme.colorScheme.primary) },
-                title = { Text(stringResource(R.string.new_update_available), fontWeight = FontWeight.Bold) },
-                text = {
-                    Text(
-                        stringResource(R.string.update_available_template, tag),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        updateAvailableTag = null
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/A-EDev/Flow/releases/latest"))
-                        context.startActivity(intent)
-                    }) {
-                        Text(stringResource(R.string.download))
+        val info = pendingUpdate
+        if (info != null) {
+            UpdateDialog(
+                updateInfo = info,
+                downloadState = updateDownloadState,
+                onDismiss = {
+                    if (updateDownloadState !is UpdateDownloadState.Downloading) {
+                        pendingUpdate = null
+                        updateDownloadState = UpdateDownloadState.Idle
                     }
                 },
-                dismissButton = {
-                    TextButton(onClick = { updateAvailableTag = null }) {
-                        Text(stringResource(R.string.cancel))
+                onUpdate = {
+                    coroutineScope.launch {
+                        ApkUpdateInstaller.downloadAndInstall(
+                            context = context,
+                            downloadUrl = info.downloadUrl,
+                        ) { updateDownloadState = it }
                     }
                 },
             )

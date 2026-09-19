@@ -25,15 +25,6 @@ import androidx.compose.ui.unit.dp
 import io.github.aedev.flow.R
 import io.github.aedev.flow.ui.components.layout.topbar.FlowTopBar
 
-// NOTE (TuTube): the original Patreon button and crypto wallet addresses
-// that used to live in this screen belonged to the upstream Flow project's
-// developer, not to this fork - keeping them would have sent any real
-// donation to the wrong person under our own app's branding. Replaced with
-// an honest placeholder until/unless this fork has its own real donation
-// destination to show here. The dead helper composables/functions that
-// only existed to render those (DonationRow, CryptoDivider,
-// copyToClipboard, the Patreon icon) were removed along with their
-// now-unused imports, rather than left as orphaned code.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonationsScreen(
@@ -76,7 +67,7 @@ fun DonationsScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No donation links are set up for this build yet.",
+                text = stringResource(R.string.donations_no_links_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
