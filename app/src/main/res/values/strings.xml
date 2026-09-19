@@ -2680,6 +2680,12 @@
     </plurals>
     <string name="notification_update_available">Update Available: %1$s</string>
     <string name="notification_tap_to_update">Tap to update to the latest version.</string>
+    <string name="notification_update_required">This update is required. Tap to install it now.</string>
+    <string name="notification_channel_updates_mandatory">Required Updates</string>
+    <string name="notification_channel_updates_mandatory_description">Alerts for updates you must install to keep using the app</string>
+    <string name="update_required_title">Update required</string>
+    <string name="update_required_body">This version of TuTube is no longer supported. Please update to continue.</string>
+    <string name="update_required_how_to_update">If the installer does not open, allow TuTube to install unknown apps in system settings.</string>
     <string name="notification_watch_later_reminder">Watch Later Reminder</string>
     <string name="notification_video_live">Video is live</string>
     <string name="notification_channel_live">%1$s is now live: %2$s</string>

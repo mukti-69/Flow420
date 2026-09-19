@@ -14,6 +14,7 @@ import io.github.aedev.flow.BuildConfig
 import io.github.aedev.flow.data.local.LocalDataManager
 import io.github.aedev.flow.data.local.PlayerPreferences
 import io.github.aedev.flow.utils.UpdateManager
+import io.github.aedev.flow.utils.shouldBlockLaunch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -97,16 +98,33 @@ class UpdateCheckWorker(
                 }
 
                 Log.d(TAG, "Checking for updates...")
+
+                // Refresh the owner's supported-version floor first: it decides whether the alert
+                // has to be mandatory, and caching it here keeps the launch gate working offline.
+                val policy = UpdateManager.fetchPolicy()
+                if (policy != null) {
+                    dataManager.setLastUpdatePolicy(policy)
+                }
+
                 val updateInfo = UpdateManager.checkForUpdate(BuildConfig.VERSION_NAME)
 
                 if (updateInfo != null && updateInfo.isNewer) {
                     Log.d(TAG, "New version found: ${updateInfo.version}")
+                    dataManager.setLastUpdateInfo(BuildConfig.VERSION_NAME, updateInfo)
+
+                    val mandatory =
+                        shouldBlockLaunch(
+                            policy = policy ?: dataManager.lastUpdatePolicy.first(),
+                            installedVersionCode = BuildConfig.VERSION_CODE,
+                            updateAvailable = true,
+                        )
 
                     NotificationHelper.showUpdateNotification(
                         applicationContext,
                         updateInfo.version,
                         updateInfo.changelog,
                         updateInfo.downloadUrl,
+                        mandatory = mandatory,
                     )
                 } else {
                     Log.d(TAG, "No new updates found")

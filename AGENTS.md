@@ -536,3 +536,47 @@ run that occupies a physical device, and the resulting diff is thousands of line
 - Profile size is **not** a measure of startup work: it records everything executed during the
   journey on any thread, so moving work to a background thread keeps it in the profile. Use
   `StartupBenchmarks` (`:baselineprofile:connectedBenchmarkReleaseAndroidTest`) to measure.
+
+## Forced updates
+
+`update-policy.json` on the default branch is read at every launch and every periodic check. It is
+served straight from `raw.githubusercontent.com`, so raising the floor takes effect without shipping
+a release:
+
+```json
+{
+  "min_supported_version_code": 0,
+  "min_supported_version_name": "2.2.1",
+  "message": null
+}
+```
+
+- `min_supported_version_code` is the lowest `versionCode` allowed to run. CI derives a tag's
+  `versionCode` as `major * 10000 + minor * 100 + patch`, so `v2.3.0` is `20300`. Raise this value to
+  gate every older install.
+- `message` replaces the default body text on the gate screen. Leave it `null` to use the built-in
+  wording.
+- The shipped default is `0`, which gates nobody. A build must never gate itself: the file that goes
+  out with a release has to name a floor at or below that release's own `versionCode`.
+
+Behaviour, and the constraints that shaped it:
+
+- The gate only closes when `requiresUpdate(installedCode)` is true **and** an installable release is
+  actually available. If the floor is raised before the matching release is published, every launch
+  fails open instead of stranding users on a screen with nothing to install. Publish the release
+  first, then raise the floor.
+- A malformed or unreachable policy fails open. A network error or a typo must never be what locks
+  users out of their app.
+- The policy and the last seen release are cached in DataStore, and the cached release is tagged
+  with the version that found it. Without that tag, an app that had already installed the update
+  would keep reading a stale `isNewer` and loop on its own gate with no way out.
+- Mandatory notifications use a separate channel, `updates_mandatory_channel`, at `IMPORTANCE_HIGH`.
+  Android freezes a channel's importance after creation, so reusing `updates_channel` (created at
+  `IMPORTANCE_LOW`) would silently never alert. The mandatory path also bypasses the per-type
+  `notifUpdatesEnabled` toggle, though the system notification permission still applies.
+
+Hard limit: this reaches only builds whose updater already points at `mukti-69/Flow420`. The last
+upstream release was also v2.2.1, so an install still running upstream's code queries
+`A-EDev/Flow`, never sees a newer release there, and cannot be forced to update by anything in this
+fork. Those users have to install a fork build once, manually; every build from v2.2.2 onward
+carries the gate.

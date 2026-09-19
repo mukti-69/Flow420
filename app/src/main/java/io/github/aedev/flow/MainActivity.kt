@@ -42,6 +42,7 @@ import io.github.aedev.flow.ui.components.ProvideVideoCardState
 import io.github.aedev.flow.ui.components.UpdateDialog
 import io.github.aedev.flow.ui.components.shared.ProvideChannelGroupLabels
 import io.github.aedev.flow.ui.screens.CrashReporterScreen
+import io.github.aedev.flow.ui.screens.update.UpdateRequiredScreen
 import io.github.aedev.flow.ui.theme.CustomThemePalettes
 import io.github.aedev.flow.ui.theme.FlowTheme
 import io.github.aedev.flow.ui.theme.ThemeMode
@@ -53,6 +54,8 @@ import io.github.aedev.flow.utils.FlowCrashHandler
 import io.github.aedev.flow.utils.UpdateDownloadState
 import io.github.aedev.flow.utils.UpdateInfo
 import io.github.aedev.flow.utils.UpdateManager
+import io.github.aedev.flow.utils.UpdatePolicy
+import io.github.aedev.flow.utils.shouldBlockLaunch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -227,18 +230,53 @@ class MainActivity : ComponentActivity() {
 
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             var updateDownloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
+            var updatePolicy by remember { mutableStateOf<UpdatePolicy?>(null) }
+
+            // Replaces the app entirely rather than sitting on top of it: the whole point is that the
+            // UI is unreachable until the update is installed, and a composed-but-covered app would
+            // still take back presses and fire requests. Computed here so the optional-update dialog
+            // can stand down while the gate is up.
+            val gated =
+                BuildConfig.UPDATER_ENABLED &&
+                    shouldBlockLaunch(
+                        policy = updatePolicy,
+                        installedVersionCode = BuildConfig.VERSION_CODE,
+                        updateAvailable = updateInfo != null,
+                    )
 
             // Check for updates ONCE on launch — skip debug/foss builds, enforce 24h cooldown
             LaunchedEffect(Unit) {
                 if (BuildConfig.DEBUG || !BuildConfig.UPDATER_ENABLED) return@LaunchedEffect
+
+                // Apply the cached policy and cached download before touching the network so the gate can
+                // decide on the first frame, and still decides when the device is offline.
+                val cachedPolicy = dataManager.lastUpdatePolicy.first()
+                updatePolicy = cachedPolicy
+                val cachedUpdate = dataManager.lastUpdateInfo.first()
+                if (cachedUpdate != null && cachedUpdate.isFor(BuildConfig.VERSION_NAME) && cachedUpdate.info.isNewer) {
+                    updateInfo = cachedUpdate.info
+                }
+
                 val lastCheck = dataManager.lastUpdateCheck.first()
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - lastCheck < 24 * 60 * 60 * 1000L) return@LaunchedEffect
+                val belowCachedFloor = cachedPolicy?.requiresUpdate(BuildConfig.VERSION_CODE) == true
+
+                // A build that the cached policy already considers unsupported must not have its
+                // recheck suppressed by the cooldown: that is exactly the case where the gate has
+                // to confirm whether an installable update exists yet.
+                if (!belowCachedFloor && currentTime - lastCheck < 24 * 60 * 60 * 1000L) return@LaunchedEffect
+
+                val freshPolicy = UpdateManager.fetchPolicy()
+                if (freshPolicy != null) {
+                    updatePolicy = freshPolicy
+                    dataManager.setLastUpdatePolicy(freshPolicy)
+                }
 
                 val info = UpdateManager.checkForUpdate(BuildConfig.VERSION_NAME)
                 dataManager.setLastUpdateCheck(currentTime)
                 if (info != null && info.isNewer) {
                     updateInfo = info
+                    dataManager.setLastUpdateInfo(BuildConfig.VERSION_NAME, info)
                 }
             }
 
@@ -293,8 +331,11 @@ class MainActivity : ComponentActivity() {
                 systemDarkThemeMode = systemDarkThemeMode,
                 systemDarkThemeVariant = systemDarkThemeVariant,
             ) {
-                // Show Dialog Overlay if update exists (github flavor only)
-                if (BuildConfig.UPDATER_ENABLED && updateInfo != null) {
+                // Show Dialog Overlay if update exists (github flavor only).
+                // Suppressed while the gate is up: the mandatory screen already carries the
+                // changelog and its own install button, so layering the dialog on top would just
+                // duplicate it and re-introduce a dismiss affordance.
+                if (BuildConfig.UPDATER_ENABLED && updateInfo != null && !gated) {
                     UpdateDialog(
                         updateInfo = updateInfo!!,
                         downloadState = updateDownloadState,
@@ -371,7 +412,21 @@ class MainActivity : ComponentActivity() {
                         val openMusicPlayerRequest by this@MainActivity.openMusicPlayerRequest
                         val pendingWidgetRoute by this@MainActivity.pendingWidgetRoute
 
-                        if (appUiRoot == AppUiRoot.TV) {
+                        if (gated) {
+                            UpdateRequiredScreen(
+                                updateInfo = updateInfo!!,
+                                message = updatePolicy?.message,
+                                downloadState = updateDownloadState,
+                                onUpdate = {
+                                    scope.launch {
+                                        ApkUpdateInstaller.downloadAndInstall(
+                                            context = context,
+                                            downloadUrl = updateInfo!!.downloadUrl,
+                                        ) { state -> updateDownloadState = state }
+                                    }
+                                },
+                            )
+                        } else if (appUiRoot == AppUiRoot.TV) {
                             FlowTvApp(
                                 deeplinkVideoId = deeplinkVideoId,
                                 isShort = isDeeplinkShort,

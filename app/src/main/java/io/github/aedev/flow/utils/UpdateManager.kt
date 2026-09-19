@@ -5,16 +5,62 @@ import android.util.Log
 import io.github.aedev.flow.network.AppProxyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 
+@Serializable
 data class UpdateInfo(
-    val version: String, // e.g., "v1.2.0"
-    val changelog: String, // The release notes
-    val downloadUrl: String, // Link to the .apk or the release page
-    val isNewer: Boolean,
-)
+    @SerialName("version") val version: String, // e.g., "v1.2.0"
+    @SerialName("changelog") val changelog: String, // The release notes
+    @SerialName("download_url") val downloadUrl: String, // Link to the .apk or the release page
+    @SerialName("is_newer") val isNewer: Boolean,
+) {
+    fun toJson(): String = json.encodeToString(this)
+
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
+        /** Cached alongside the policy so the gate survives a cold start with no network. */
+        fun fromJson(raw: String): UpdateInfo? =
+            try {
+                json.decodeFromString<UpdateInfo>(raw)
+            } catch (e: Exception) {
+                null
+            }
+    }
+}
+
+/**
+ * An [UpdateInfo] paired with the build it was detected on.
+ *
+ * [UpdateInfo.isNewer] is decided once, against whichever version was installed at check time. A
+ * cached copy therefore stops being true the moment the user installs it, and replaying it blindly
+ * would tell an already-updated app to install the version it is running — a gate with no way out.
+ */
+@Serializable
+data class CachedUpdateInfo(
+    @SerialName("installed_version_name") val installedVersionName: String,
+    @SerialName("info") val info: UpdateInfo,
+) {
+    fun isFor(versionName: String): Boolean = installedVersionName == versionName
+
+    fun toJson(): String = json.encodeToString(this)
+
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
+        fun fromJson(raw: String): CachedUpdateInfo? =
+            try {
+                json.decodeFromString<CachedUpdateInfo>(raw)
+            } catch (e: Exception) {
+                null
+            }
+    }
+}
 
 /**
  * Outcome of an update check. A plain null cannot tell "already current" apart from "the request
@@ -48,6 +94,38 @@ object UpdateManager {
     // update.
     internal const val GITHUB_REPO = "mukti-69/Flow420"
     internal const val API_URL = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+
+    // Read from the default branch rather than a release asset so the owner can change the
+    // supported-version floor by editing one file, with no app release in between.
+    internal const val POLICY_URL = "https://raw.githubusercontent.com/$GITHUB_REPO/main/update-policy.json"
+
+    /**
+     * Fetches the owner-controlled update policy. Returns null on any failure so the caller can
+     * fall back to the last cached policy or to not blocking at all: a network problem must never
+     * be what locks a user out.
+     */
+    suspend fun fetchPolicy(): UpdatePolicy? =
+        withContext(Dispatchers.IO) {
+            try {
+                val request =
+                    Request
+                        .Builder()
+                        .url(POLICY_URL)
+                        .addHeader("Accept", "application/json")
+                        .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "Policy fetch returned HTTP ${response.code}")
+                        return@withContext null
+                    }
+                    UpdatePolicy.fromJson(response.body.string())
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Policy fetch failed", e)
+                null
+            }
+        }
 
     suspend fun checkForUpdate(currentVersionName: String): UpdateInfo? =
         when (val result = checkForUpdateResult(currentVersionName)) {
